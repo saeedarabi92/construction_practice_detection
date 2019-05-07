@@ -6,3 +6,6 @@
 2. create _images_ and _tile_images_ folders
 3. put the original images in the _images_ folder
 4. run pip install image_slicer
+
+## ToDo:
+1. Add Tensorflow object detection API
