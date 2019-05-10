@@ -14,5 +14,9 @@ if __name__ == '__main__':
     Package_dir = os.path.dirname(os.path.realpath(__file__))
     Images_dir = Package_dir + "/images"
     # Images_dir = "/Users/saeedarabi/Box/Drone Pictures/TAMA032819"
+<<<<<<< HEAD
+=======
+    # how many tiles do you need?
+>>>>>>> 0d5459daad9582a560a3c64f7e8050e8414aa91f
     number_of_tiles = 12
     split_image_directory(Images_dir,number_of_tiles, Package_dir)
