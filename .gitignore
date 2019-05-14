@@ -129,3 +129,4 @@ dmypy.json
 tile_images/*
 images/*
 TAMA032819*
+models/research/object_detection/models/*
