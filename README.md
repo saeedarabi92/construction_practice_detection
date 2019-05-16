@@ -23,6 +23,15 @@ done
 ## Instruction for training with custom dataset
 [link to tutorial](https://github.com/EdjeElectronics/TensorFlow-Object-Detection-API-Tutorial-Train-Multiple-Objects-Windows-10)
 
+### To create pars json files to a csv file:
+* From _tensorflow/models/research/object_detection_ run:
+
+put _train_ and _test_ images in the _models/research/object_detection/images/_
+
+python json_to_csv.py
+
+
+
 ### To create tf.record files:
 * From _tensorflow/models/research/_
 
