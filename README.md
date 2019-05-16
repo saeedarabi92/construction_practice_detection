@@ -23,4 +23,4 @@ done
 ```
 
 ## ToDo:
-1. Add Tensorflow object detection API
+1. Add scripts to README.md
