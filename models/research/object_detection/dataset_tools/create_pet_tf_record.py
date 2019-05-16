@@ -54,7 +54,7 @@ flags.DEFINE_boolean('faces_only', True, 'If True, generates bounding boxes '
                      'in the latter case, the resulting files are much larger.')
 flags.DEFINE_string('mask_type', 'png', 'How to represent instance '
                     'segmentation masks. Options are "png" or "numerical".')
-flags.DEFINE_integer('num_shards', 10, 'Number of TFRecord shards')
+flags.DEFINE_integer('num_shards', 1, 'Number of TFRecord shards')
 
 FLAGS = flags.FLAGS
 

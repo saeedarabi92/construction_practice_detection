@@ -90,7 +90,7 @@ def upsample(net, num_outputs, kernel_size, method='nn_upsample_conv'):
     net = layers.conv2d_transpose(
         net, num_outputs, [4, 4], stride=kernel_size, activation_fn=None)
   else:
-    raise ValueError('Unknown method: [%s]' % method)
+    raise ValueError('Unknown method: [%s]', method)
 
   return net
 
@@ -222,8 +222,7 @@ def pix2pix_generator(net,
   return logits, end_points
 
 
-def pix2pix_discriminator(net, num_filters, padding=2, pad_mode='REFLECT',
-                          activation_fn=tf.nn.leaky_relu, is_training=False):
+def pix2pix_discriminator(net, num_filters, padding=2, is_training=False):
   """Creates the Image2Image Translation Discriminator.
 
   Args:
@@ -232,8 +231,6 @@ def pix2pix_discriminator(net, num_filters, padding=2, pad_mode='REFLECT',
     num_filters: A list of the filters in the discriminator. The length of the
       list determines the number of layers in the discriminator.
     padding: Amount of reflection padding applied before each convolution.
-    pad_mode: mode for tf.pad, one of "CONSTANT", "REFLECT", or "SYMMETRIC".
-    activation_fn: activation fn for layers.conv2d.
     is_training: Whether or not the model is training or testing.
 
   Returns:
@@ -252,7 +249,7 @@ def pix2pix_discriminator(net, num_filters, padding=2, pad_mode='REFLECT',
         spatial_pad = tf.constant(
             [[0, 0], [padding, padding], [padding, padding], [0, 0]],
             dtype=tf.int32)
-        return tf.pad(net, spatial_pad, pad_mode)
+        return tf.pad(net, spatial_pad, 'REFLECT')
     else:
       return net
 
@@ -261,7 +258,7 @@ def pix2pix_discriminator(net, num_filters, padding=2, pad_mode='REFLECT',
       kernel_size=[4, 4],
       stride=2,
       padding='valid',
-      activation_fn=activation_fn):
+      activation_fn=tf.nn.leaky_relu):
 
     # No normalization on the input layer.
     net = layers.conv2d(

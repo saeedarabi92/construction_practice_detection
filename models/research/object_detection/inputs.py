@@ -53,7 +53,6 @@ def transform_input_data(tensor_dict,
                          data_augmentation_fn=None,
                          merge_multiple_boxes=False,
                          retain_original_image=False,
-                         use_multiclass_scores=False,
                          use_bfloat16=False):
   """A single function that is responsible for all input data transformations.
 
@@ -88,36 +87,24 @@ def transform_input_data(tensor_dict,
       and classes for a given image if the boxes are exactly the same.
     retain_original_image: (optional) whether to retain original image in the
       output dictionary.
-    use_multiclass_scores: whether to use multiclass scores as
-      class targets instead of one-hot encoding of `groundtruth_classes`.
     use_bfloat16: (optional) a bool, whether to use bfloat16 in training.
 
   Returns:
     A dictionary keyed by fields.InputDataFields containing the tensors obtained
     after applying all the transformations.
   """
-  # Reshape flattened multiclass scores tensor into a 2D tensor of shape
-  # [num_boxes, num_classes].
-  if fields.InputDataFields.multiclass_scores in tensor_dict:
-    tensor_dict[fields.InputDataFields.multiclass_scores] = tf.reshape(
-        tensor_dict[fields.InputDataFields.multiclass_scores], [
-            tf.shape(tensor_dict[fields.InputDataFields.groundtruth_boxes])[0],
-            num_classes
-        ])
   if fields.InputDataFields.groundtruth_boxes in tensor_dict:
     tensor_dict = util_ops.filter_groundtruth_with_nan_box_coordinates(
         tensor_dict)
-    tensor_dict = util_ops.filter_unrecognized_classes(tensor_dict)
+  if fields.InputDataFields.image_additional_channels in tensor_dict:
+    channels = tensor_dict[fields.InputDataFields.image_additional_channels]
+    tensor_dict[fields.InputDataFields.image] = tf.concat(
+        [tensor_dict[fields.InputDataFields.image], channels], axis=2)
 
   if retain_original_image:
     tensor_dict[fields.InputDataFields.original_image] = tf.cast(
         image_resizer_fn(tensor_dict[fields.InputDataFields.image], None)[0],
         tf.uint8)
-
-  if fields.InputDataFields.image_additional_channels in tensor_dict:
-    channels = tensor_dict[fields.InputDataFields.image_additional_channels]
-    tensor_dict[fields.InputDataFields.image] = tf.concat(
-        [tensor_dict[fields.InputDataFields.image], channels], axis=2)
 
   # Apply data augmentation ops.
   if data_augmentation_fn is not None:
@@ -149,18 +136,15 @@ def transform_input_data(tensor_dict,
   tensor_dict[fields.InputDataFields.groundtruth_classes] = tf.one_hot(
       zero_indexed_groundtruth_classes, num_classes)
 
-  if use_multiclass_scores:
-    tensor_dict[fields.InputDataFields.groundtruth_classes] = tensor_dict[
-        fields.InputDataFields.multiclass_scores]
-    tensor_dict.pop(fields.InputDataFields.multiclass_scores, None)
-
   if fields.InputDataFields.groundtruth_confidences in tensor_dict:
     groundtruth_confidences = tensor_dict[
         fields.InputDataFields.groundtruth_confidences]
-    # Map the confidences to the one-hot encoding of classes
     tensor_dict[fields.InputDataFields.groundtruth_confidences] = (
-        tf.reshape(groundtruth_confidences, [-1, 1]) *
-        tensor_dict[fields.InputDataFields.groundtruth_classes])
+        tf.sparse_to_dense(
+            zero_indexed_groundtruth_classes,
+            [num_classes],
+            groundtruth_confidences,
+            validate_indices=False))
   else:
     groundtruth_confidences = tf.ones_like(
         zero_indexed_groundtruth_classes, dtype=tf.float32)
@@ -190,9 +174,6 @@ def pad_input_data_to_static_shapes(tensor_dict, max_num_boxes, num_classes,
                                     spatial_image_shape=None):
   """Pads input tensors to static shapes.
 
-  In case num_additional_channels > 0, we assume that the additional channels
-  have already been concatenated to the base image.
-
   Args:
     tensor_dict: Tensor dictionary of input data
     max_num_boxes: Max number of groundtruth boxes needed to compute shapes for
@@ -207,8 +188,7 @@ def pad_input_data_to_static_shapes(tensor_dict, max_num_boxes, num_classes,
     tensors in the dataset.
 
   Raises:
-    ValueError: If groundtruth classes is neither rank 1 nor rank 2, or if we
-      detect that additional channels have not been concatenated yet.
+    ValueError: If groundtruth classes is neither rank 1 nor rank 2.
   """
 
   if not spatial_image_shape or spatial_image_shape == [-1, -1]:
@@ -220,27 +200,10 @@ def pad_input_data_to_static_shapes(tensor_dict, max_num_boxes, num_classes,
   if fields.InputDataFields.image_additional_channels in tensor_dict:
     num_additional_channels = tensor_dict[
         fields.InputDataFields.image_additional_channels].shape[2].value
-
-  # We assume that if num_additional_channels > 0, then it has already been
-  # concatenated to the base image (but not the ground truth).
-  num_channels = 3
-  if fields.InputDataFields.image in tensor_dict:
-    num_channels = tensor_dict[fields.InputDataFields.image].shape[2].value
-
-  if num_additional_channels:
-    if num_additional_channels >= num_channels:
-      raise ValueError(
-          'Image must be already concatenated with additional channels.')
-
-    if (fields.InputDataFields.original_image in tensor_dict and
-        tensor_dict[fields.InputDataFields.original_image].shape[2].value ==
-        num_channels):
-      raise ValueError(
-          'Image must be already concatenated with additional channels.')
-
   padding_shapes = {
+      # Additional channels are merged before batching.
       fields.InputDataFields.image: [
-          height, width, num_channels
+          height, width, 3 + num_additional_channels
       ],
       fields.InputDataFields.original_image_spatial_shape: [2],
       fields.InputDataFields.image_additional_channels: [
@@ -252,6 +215,8 @@ def pad_input_data_to_static_shapes(tensor_dict, max_num_boxes, num_classes,
       fields.InputDataFields.groundtruth_difficult: [max_num_boxes],
       fields.InputDataFields.groundtruth_boxes: [max_num_boxes, 4],
       fields.InputDataFields.groundtruth_classes: [max_num_boxes, num_classes],
+      fields.InputDataFields.groundtruth_confidences: [
+          max_num_boxes, num_classes],
       fields.InputDataFields.groundtruth_instance_masks: [
           max_num_boxes, height, width
       ],
@@ -259,21 +224,20 @@ def pad_input_data_to_static_shapes(tensor_dict, max_num_boxes, num_classes,
       fields.InputDataFields.groundtruth_group_of: [max_num_boxes],
       fields.InputDataFields.groundtruth_area: [max_num_boxes],
       fields.InputDataFields.groundtruth_weights: [max_num_boxes],
-      fields.InputDataFields.groundtruth_confidences: [
-          max_num_boxes, num_classes
-      ],
       fields.InputDataFields.num_groundtruth_boxes: [],
       fields.InputDataFields.groundtruth_label_types: [max_num_boxes],
-      fields.InputDataFields.groundtruth_label_weights: [max_num_boxes],
+      fields.InputDataFields.groundtruth_label_scores: [max_num_boxes],
       fields.InputDataFields.true_image_shape: [3],
+      fields.InputDataFields.multiclass_scores: [
+          max_num_boxes, num_classes + 1 if num_classes is not None else None
+      ],
       fields.InputDataFields.groundtruth_image_classes: [num_classes],
       fields.InputDataFields.groundtruth_image_confidences: [num_classes],
   }
 
   if fields.InputDataFields.original_image in tensor_dict:
     padding_shapes[fields.InputDataFields.original_image] = [
-        height, width, tensor_dict[fields.InputDataFields.
-                                   original_image].shape[2].value
+        height, width, 3 + num_additional_channels
     ]
   if fields.InputDataFields.groundtruth_keypoints in tensor_dict:
     tensor_shape = (
@@ -323,18 +287,9 @@ def augment_input_data(tensor_dict, data_augmentation_options):
                             in tensor_dict)
   include_keypoints = (fields.InputDataFields.groundtruth_keypoints
                        in tensor_dict)
-  include_label_weights = (fields.InputDataFields.groundtruth_weights
-                           in tensor_dict)
-  include_label_confidences = (fields.InputDataFields.groundtruth_confidences
-                               in tensor_dict)
-  include_multiclass_scores = (fields.InputDataFields.multiclass_scores in
-                               tensor_dict)
   tensor_dict = preprocessor.preprocess(
       tensor_dict, data_augmentation_options,
       func_arg_map=preprocessor.get_default_func_arg_map(
-          include_label_weights=include_label_weights,
-          include_label_confidences=include_label_confidences,
-          include_multiclass_scores=include_multiclass_scores,
           include_instance_masks=include_instance_masks,
           include_keypoints=include_keypoints))
   tensor_dict[fields.InputDataFields.image] = tf.squeeze(
@@ -348,7 +303,7 @@ def _get_labels_dict(input_dict):
       fields.InputDataFields.num_groundtruth_boxes,
       fields.InputDataFields.groundtruth_boxes,
       fields.InputDataFields.groundtruth_classes,
-      fields.InputDataFields.groundtruth_weights,
+      fields.InputDataFields.groundtruth_weights
   ]
   labels_dict = {}
   for key in required_label_keys:
@@ -508,7 +463,6 @@ def create_train_input_fn(train_config, train_input_config,
           data_augmentation_fn=data_augmentation_fn,
           merge_multiple_boxes=train_config.merge_multiple_label_boxes,
           retain_original_image=train_config.retain_original_images,
-          use_multiclass_scores=train_config.use_multiclass_scores,
           use_bfloat16=train_config.use_bfloat16)
 
       tensor_dict = pad_input_data_to_static_shapes(

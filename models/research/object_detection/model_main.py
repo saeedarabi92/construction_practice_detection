@@ -25,6 +25,7 @@ import tensorflow as tf
 from object_detection import model_hparams
 from object_detection import model_lib
 
+tf.logging.set_verbosity(tf.logging.INFO)
 flags.DEFINE_string(
     'model_dir', None, 'Path to output model directory '
     'where event and checkpoint files will be written.')
@@ -59,7 +60,7 @@ FLAGS = flags.FLAGS
 def main(unused_argv):
   flags.mark_flag_as_required('model_dir')
   flags.mark_flag_as_required('pipeline_config_path')
-  config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir)
+  config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir, log_step_count_steps=1, save_checkpoints_secs=180, keep_checkpoint_max=10000)
 
   train_and_eval_dict = model_lib.create_estimator_and_inputs(
       run_config=config,
@@ -86,7 +87,7 @@ def main(unused_argv):
       input_fn = eval_input_fns[0]
     if FLAGS.run_once:
       estimator.evaluate(input_fn,
-                         steps=None,
+                         num_eval_steps=None,
                          checkpoint_path=tf.train.latest_checkpoint(
                              FLAGS.checkpoint_dir))
     else:

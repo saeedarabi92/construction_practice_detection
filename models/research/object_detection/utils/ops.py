@@ -14,7 +14,6 @@
 # ==============================================================================
 
 """A module for helper tensorflow ops."""
-import collections
 import math
 import numpy as np
 import six
@@ -328,7 +327,6 @@ def retain_groundtruth(tensor_dict, valid_indices):
     tensor_dict: a dictionary of following groundtruth tensors -
       fields.InputDataFields.groundtruth_boxes
       fields.InputDataFields.groundtruth_classes
-      fields.InputDataFields.groundtruth_confidences
       fields.InputDataFields.groundtruth_keypoints
       fields.InputDataFields.groundtruth_instance_masks
       fields.InputDataFields.groundtruth_is_crowd
@@ -358,9 +356,7 @@ def retain_groundtruth(tensor_dict, valid_indices):
     for key in tensor_dict:
       if key in [fields.InputDataFields.groundtruth_boxes,
                  fields.InputDataFields.groundtruth_classes,
-                 fields.InputDataFields.groundtruth_confidences,
                  fields.InputDataFields.groundtruth_keypoints,
-                 fields.InputDataFields.groundtruth_keypoint_visibilities,
                  fields.InputDataFields.groundtruth_instance_masks]:
         valid_dict[key] = tf.gather(tensor_dict[key], valid_indices)
       # Input decoder returns empty tensor when these fields are not provided.
@@ -388,7 +384,6 @@ def retain_groundtruth_with_positive_classes(tensor_dict):
     tensor_dict: a dictionary of following groundtruth tensors -
       fields.InputDataFields.groundtruth_boxes
       fields.InputDataFields.groundtruth_classes
-      fields.InputDataFields.groundtruth_confidences
       fields.InputDataFields.groundtruth_keypoints
       fields.InputDataFields.groundtruth_instance_masks
       fields.InputDataFields.groundtruth_is_crowd
@@ -430,7 +425,6 @@ def filter_groundtruth_with_crowd_boxes(tensor_dict):
     tensor_dict: a dictionary of following groundtruth tensors -
       fields.InputDataFields.groundtruth_boxes
       fields.InputDataFields.groundtruth_classes
-      fields.InputDataFields.groundtruth_confidences
       fields.InputDataFields.groundtruth_keypoints
       fields.InputDataFields.groundtruth_instance_masks
       fields.InputDataFields.groundtruth_is_crowd
@@ -456,7 +450,6 @@ def filter_groundtruth_with_nan_box_coordinates(tensor_dict):
     tensor_dict: a dictionary of following groundtruth tensors -
       fields.InputDataFields.groundtruth_boxes
       fields.InputDataFields.groundtruth_classes
-      fields.InputDataFields.groundtruth_confidences
       fields.InputDataFields.groundtruth_keypoints
       fields.InputDataFields.groundtruth_instance_masks
       fields.InputDataFields.groundtruth_is_crowd
@@ -474,36 +467,6 @@ def filter_groundtruth_with_nan_box_coordinates(tensor_dict):
   valid_indices = tf.where(valid_indicator_vector)
 
   return retain_groundtruth(tensor_dict, valid_indices)
-
-
-def filter_unrecognized_classes(tensor_dict):
-  """Filters out class labels that are not unrecognized by the labelmap.
-
-  Decoder would parse unrecognized classes (not included in the labelmap) to
-  a label of value -1. Such targets are unecessary for training, and causes
-  issue for evaluation, due to labeling mapping logic. This function filters
-  those labels out for both training and evaluation.
-
-  Args:
-    tensor_dict: dictionary containing input tensors keyed by
-      fields.InputDataFields.
-
-  Returns:
-    A dictionary keyed by fields.InputDataFields containing the tensors
-    obtained after applying the filtering.
-
-  Raises:
-    ValueError: If groundtruth_classes tensor is not in tensor_dict.
-  """
-  if fields.InputDataFields.groundtruth_classes not in tensor_dict:
-    raise ValueError('`groundtruth classes` not in tensor_dict.')
-  # Refer to tf_example_decoder for how unrecognized labels are handled.
-  unrecognized_label = -1
-  recognized_indices = tf.where(
-      tf.greater(tensor_dict[fields.InputDataFields.groundtruth_classes],
-                 unrecognized_label))
-
-  return retain_groundtruth(tensor_dict, recognized_indices)
 
 
 def normalize_to_target(inputs,
@@ -1124,10 +1087,81 @@ def native_crop_and_resize(image, boxes, crop_size, scope=None):
     return tf.reshape(cropped_regions, final_shape)
 
 
+def expected_classification_loss_under_sampling(
+    batch_cls_targets, cls_losses, unmatched_cls_losses,
+    desired_negative_sampling_ratio, min_num_negative_samples):
+  """Computes classification loss by background/foreground weighting.
 
+  The weighting is such that the effective background/foreground weight ratio
+  is the desired_negative_sampling_ratio. if p_i is the foreground probability
+  of anchor a_i, L(a_i) is the anchors loss, N is the number of anchors, M
+  is the sum of foreground probabilities across anchors, and K is the desired
+  ratio between the number of negative and positive samples, then the total loss
+  L is calculated as:
 
+  beta = K*M/(N-M)
+  L = sum_{i=1}^N [p_i * L_p(a_i) + beta * (1 - p_i) * L_n(a_i)]
+  where L_p(a_i) is the loss against target assuming the anchor was matched,
+  otherwise zero, and L_n(a_i) is the loss against the background target
+  assuming the anchor was unmatched, otherwise zero.
 
-EqualizationLossConfig = collections.namedtuple('EqualizationLossConfig',
-                                                ['weight', 'exclude_prefixes'])
+  Args:
+    batch_cls_targets: A tensor with shape [batch_size, num_anchors, num_classes
+      + 1], where 0'th index is the background class, containing the class
+      distrubution for the target assigned to a given anchor.
+    cls_losses: Float tensor of shape [batch_size, num_anchors] representing
+      anchorwise classification losses.
+    unmatched_cls_losses: loss for each anchor against the unmatched class
+      target.
+    desired_negative_sampling_ratio: The desired background/foreground weight
+      ratio.
+    min_num_negative_samples: Minimum number of effective negative samples.
+      Used only when there are no positive examples.
 
+  Returns:
+    The classification loss.
+  """
+  num_anchors = tf.cast(tf.shape(batch_cls_targets)[1], tf.float32)
 
+  # find the p_i
+  foreground_probabilities = 1 - batch_cls_targets[:, :, 0]
+
+  foreground_sum = tf.reduce_sum(foreground_probabilities, axis=-1)
+
+  # for each anchor, expected_j is the expected number of positive anchors
+  # given that this anchor was sampled as negative.
+  tiled_foreground_sum = tf.tile(
+      tf.reshape(foreground_sum, [-1, 1]),
+      [1, tf.cast(num_anchors, tf.int32)])
+  expected_j = tiled_foreground_sum - foreground_probabilities
+
+  k = desired_negative_sampling_ratio
+
+  # compute beta
+  expected_negatives = tf.to_float(num_anchors) - expected_j
+  desired_negatives = k * expected_j
+  desired_negatives = tf.where(
+      tf.greater(desired_negatives, expected_negatives), expected_negatives,
+      desired_negatives)
+
+  # probability that an anchor is sampled for the loss computation given that it
+  # is negative.
+  beta = desired_negatives / expected_negatives
+
+  # where the foreground sum is zero, use a minimum negative weight.
+  min_negative_weight = 1.0 * min_num_negative_samples / num_anchors
+  beta = tf.where(
+      tf.equal(tiled_foreground_sum, 0),
+      min_negative_weight * tf.ones_like(beta), beta)
+
+  foreground_weights = foreground_probabilities
+  background_weights = (1 - foreground_weights) * beta
+
+  weighted_foreground_losses = foreground_weights * cls_losses
+  weighted_background_losses = background_weights * unmatched_cls_losses
+
+  cls_losses = tf.reduce_sum(
+      weighted_foreground_losses, axis=-1) + tf.reduce_sum(
+          weighted_background_losses, axis=-1)
+
+  return cls_losses

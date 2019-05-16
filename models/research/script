@@ -1,0 +1,25 @@
+python object_detection/model_main.py --pipeline_config_path=/home/saeed/Desktop/papers/manuscript1/models/research/object_detection/samples/configs/ssd_mobilenet_v1_coco.config --model_dir=/home/saeed/Desktop/papers/manuscript1/models/research/object_detection/models/model --num_train_steps=200000 --sample_1_of_n_eval_examples=1 --alsologtostderr
+
+
+# cuda version:
+nvcc --version
+
+V8.0.61
+
+# tensorflow version
+python -c 'import tensorflow as tf; print(tf.__version__)'
+
+1.12.0
+
+
+from tensorflow.python.client import device_lib
+print(device_lib.list_local_devices())
+
+
+python -c "import tensorflow as tf; print(tf.contrib.eager.num_gpus())"
+
+
+watch -n 0.5 nvidia-smi
+
+
+tensorboard --logdir=/home/saeed/Desktop/papers/manuscript1/models/research/object_detection/models/model

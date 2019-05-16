@@ -54,14 +54,15 @@ By default, DetectionModels produce bounding box detections; However, we support
 a handful of auxiliary annotations associated with each bounding box, namely,
 instance masks and keypoints.
 """
-import abc
+from abc import ABCMeta
+from abc import abstractmethod
 
 from object_detection.core import standard_fields as fields
 
 
 class DetectionModel(object):
   """Abstract base class for detection models."""
-  __metaclass__ = abc.ABCMeta
+  __metaclass__ = ABCMeta
 
   def __init__(self, num_classes):
     """Constructor.
@@ -111,7 +112,7 @@ class DetectionModel(object):
     """
     return field in self._groundtruth_lists
 
-  @abc.abstractmethod
+  @abstractmethod
   def preprocess(self, inputs):
     """Input preprocessing.
 
@@ -154,7 +155,7 @@ class DetectionModel(object):
     """
     pass
 
-  @abc.abstractmethod
+  @abstractmethod
   def predict(self, preprocessed_inputs, true_image_shapes):
     """Predict prediction tensors from inputs tensor.
 
@@ -174,13 +175,9 @@ class DetectionModel(object):
     """
     pass
 
-  @abc.abstractmethod
+  @abstractmethod
   def postprocess(self, prediction_dict, true_image_shapes, **params):
     """Convert predicted output tensors to final detections.
-
-    This stage typically performs a few things such as
-    * Non-Max Suppression to remove overlapping detection boxes.
-    * Score conversion and background class removal.
 
     Outputs adhere to the following conventions:
     * Classes are integers in [0, num_classes); background classes are removed
@@ -215,20 +212,10 @@ class DetectionModel(object):
           (optional)
         keypoints: [batch, max_detections, num_keypoints, 2] (optional)
         num_detections: [batch]
-
-        In addition to the above fields this stage also outputs the following
-        raw tensors:
-
-        raw_detection_boxes: [batch, total_detections, 4] tensor containing
-          all detection boxes from `prediction_dict` in the format
-          [ymin, xmin, ymax, xmax] and normalized co-ordinates.
-        raw_detection_scores: [batch, total_detections,
-          num_classes_with_background] tensor of class score logits for
-          raw detection boxes.
     """
     pass
 
-  @abc.abstractmethod
+  @abstractmethod
   def loss(self, prediction_dict, true_image_shapes):
     """Compute scalar loss tensors with respect to provided groundtruth.
 
@@ -254,7 +241,6 @@ class DetectionModel(object):
                           groundtruth_masks_list=None,
                           groundtruth_keypoints_list=None,
                           groundtruth_weights_list=None,
-                          groundtruth_confidences_list=None,
                           groundtruth_is_crowd_list=None,
                           is_annotated_list=None):
     """Provide groundtruth tensors.
@@ -279,9 +265,6 @@ class DetectionModel(object):
         missing keypoints should be encoded as NaN.
       groundtruth_weights_list: A list of 1-D tf.float32 tensors of shape
         [num_boxes] containing weights for groundtruth boxes.
-      groundtruth_confidences_list: A list of 2-D tf.float32 tensors of shape
-        [num_boxes, num_classes] containing class confidences for groundtruth
-        boxes.
       groundtruth_is_crowd_list: A list of 1-D tf.bool tensors of shape
         [num_boxes] containing is_crowd annotations
       is_annotated_list: A list of scalar tf.bool tensors indicating whether
@@ -293,9 +276,6 @@ class DetectionModel(object):
     if groundtruth_weights_list:
       self._groundtruth_lists[fields.BoxListFields.
                               weights] = groundtruth_weights_list
-    if groundtruth_confidences_list:
-      self._groundtruth_lists[fields.BoxListFields.
-                              confidences] = groundtruth_confidences_list
     if groundtruth_masks_list:
       self._groundtruth_lists[
           fields.BoxListFields.masks] = groundtruth_masks_list
@@ -309,7 +289,7 @@ class DetectionModel(object):
       self._groundtruth_lists[
           fields.InputDataFields.is_annotated] = is_annotated_list
 
-  @abc.abstractmethod
+  @abstractmethod
   def regularization_losses(self):
     """Returns a list of regularization losses for this model.
 
@@ -321,7 +301,7 @@ class DetectionModel(object):
     """
     pass
 
-  @abc.abstractmethod
+  @abstractmethod
   def restore_map(self, fine_tune_checkpoint_type='detection'):
     """Returns a map of variables to load from a foreign checkpoint.
 
@@ -345,7 +325,7 @@ class DetectionModel(object):
     """
     pass
 
-  @abc.abstractmethod
+  @abstractmethod
   def updates(self):
     """Returns a list of update operators for this model.
 

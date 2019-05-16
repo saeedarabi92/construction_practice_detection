@@ -182,9 +182,8 @@ def build(hyperparams_config, is_training):
   initializer, weights regularizer, activation function, batch norm function
   and batch norm parameters based on the configuration.
 
-  Note that if no normalization parameters are specified in the config,
-  (i.e. left to default) then both batch norm and group norm are excluded
-  from the arg_scope.
+  Note that if the batch_norm parameteres are not specified in the config
+  (i.e. left to default) then batch norm is excluded from the arg_scope.
 
   The batch norm parameters are set for updates based on `is_training` argument
   and conv_hyperparams_config.batch_norm.train parameter. During training, they
@@ -209,14 +208,13 @@ def build(hyperparams_config, is_training):
     raise ValueError('hyperparams_config not of type '
                      'hyperparams_pb.Hyperparams.')
 
-  normalizer_fn = None
+  batch_norm = None
   batch_norm_params = None
   if hyperparams_config.HasField('batch_norm'):
-    normalizer_fn = slim.batch_norm
+    batch_norm = slim.batch_norm
     batch_norm_params = _build_batch_norm_params(
         hyperparams_config.batch_norm, is_training)
-  if hyperparams_config.HasField('group_norm'):
-    normalizer_fn = tf.contrib.layers.group_norm
+
   affected_ops = [slim.conv2d, slim.separable_conv2d, slim.conv2d_transpose]
   if hyperparams_config.HasField('op') and (
       hyperparams_config.op == hyperparams_pb2.Hyperparams.FC):
@@ -232,7 +230,7 @@ def build(hyperparams_config, is_training):
           weights_initializer=_build_initializer(
               hyperparams_config.initializer),
           activation_fn=_build_activation_fn(hyperparams_config.activation),
-          normalizer_fn=normalizer_fn) as sc:
+          normalizer_fn=batch_norm) as sc:
         return sc
 
   return scope_fn
