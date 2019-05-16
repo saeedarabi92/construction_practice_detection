@@ -45,6 +45,7 @@ tensorboard --logdir=/home/saeed/Desktop/papers/manuscript1/models/research/obje
 nvcc --version
 
 * tensorflow version
+
 python -c 'import tensorflow as tf; print(tf.__version__)'
 
 watch -n 0.5 nvidia-smi
