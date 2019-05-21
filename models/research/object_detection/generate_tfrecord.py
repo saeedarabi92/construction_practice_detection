@@ -29,18 +29,8 @@ FLAGS = flags.FLAGS
 
 # TO-DO replace this with label map
 def class_text_to_int(row_label):
-    if row_label == 'roller':
+    if row_label == 'Rock Check Dam':
         return 1
-    elif row_label == 'mixertruck':
-        return 2
-    elif row_label == 'loader':
-        return 3
-    elif row_label == 'dumptruck':
-        return 4
-    elif row_label == 'grader':
-        return 5
-    elif row_label == 'excavator':
-        return 6
     else:
         None
 
