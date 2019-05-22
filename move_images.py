@@ -2,15 +2,6 @@ import argparse
 import csv
 import os
 from shutil import copyfile
-
-# with open('../images/test_labels.csv', mode='r') as csv_file:
-#     csv_reader = csv.reader(csv_file)
-#     image_name_list = []
-#     line_count = 0
-#     for row in csv_reader:
-#         if not line_count == 0:
-#             image_name_list.append(row[0])
-#         line_count += 1
 def copy_images_from_folder1_to_folder2_with_similar_name(folder_1, folder_2):
    for dirpath_1,_,filenames_! in os.walk(folder_1):
        for f_1 in filenames_1:
