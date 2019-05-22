@@ -32,9 +32,9 @@ python json_to_csv.py
 
 ### To copy the files from folder1 (and its sub-folders) with the same name of the files in the folder2, into folder2.:
 
-* From _tensorflow/models/research/object_detection_ run:
+* From the root directory run:
 
-python move_images.py --folder1 /models/research/object_detection/images/images_tiled_raw --folder2 /models/research/object_detection/images/test
+python move_files.py --folder1 /models/research/object_detection/images/images_tiled_raw --folder2 /models/research/object_detection/images/test
 
 
 
