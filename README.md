@@ -24,11 +24,12 @@ done
 [link to tutorial](https://github.com/EdjeElectronics/TensorFlow-Object-Detection-API-Tutorial-Train-Multiple-Objects-Windows-10)
 
 ### To pars json files to a csv file:
-* From _tensorflow/models/research/object_detection_ run:
 
-put _train_ and _test_ images in the _models/research/object_detection/images/_
+Creat _train_ and _eval_ folder under _models/research/object_detection/images/_ and put their images in them.
 
-python json_to_csv.py
+* From the root directory run:
+
+python models/research/object_detection/json_to_csv.py
 
 ### To copy the files from folder1 (and its sub-folders) with the same name of the files in the folder2, into folder2.:
 
@@ -39,12 +40,16 @@ python move_files.py --folder1 /models/research/object_detection/images/images_t
 
 
 ### To create tf.record files:
-* From _tensorflow/models/research/_
 
-python object_detection/dataset_tools/create_pet_tf_record.py \
-    --label_map_path=object_detection/data/pet_label_map.pbtxt \
-    --data_dir=`pwd` \
-    --output_dir=`pwd`
+* From the root directory, run:
+
+_for training data_:
+
+python models/research/object_detection/generate_tfrecord.py --csv_input=models/research/object_detection/images/train_labels.csv --image_dir=models/research/object_detection/images/train --output_path=models/research/object_detection/data/train.record
+
+_for eval data_:
+
+python models/research/object_detection/generate_tfrecord.py --csv_input=models/research/object_detection/images/eval_labels.csv --image_dir=models/research/object_detection/images/eval --output_path=models/research/object_detection/data/eval.record
 
 ### To run the training:
 * From _tensorflow/models/research/_
