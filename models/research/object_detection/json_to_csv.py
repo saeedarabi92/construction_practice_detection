@@ -24,15 +24,16 @@ def json_to_csv(path):
             json_list.append(value)
     column_name = ['filename', 'width', 'height', 'class', 'xmin', 'ymin', 'xmax', 'ymax']
     json_df = pd.DataFrame(json_list, columns=column_name)
+    print('labels added to csv')
     return json_df
 
 def main():
-    for folder in ['train','test']:
-        image_path = os.path.join(os.getcwd(), ('images/' + folder))
+    for folder in ['eval, train']:
+        image_path = os.path.join(os.getcwd(), ('models/research/object_detection/images/' + folder))
         print('image_path: ', image_path)
         json_df = json_to_csv(image_path)
-        json_df.to_csv(('images/' + folder + '_labels.csv'), index=None)
-        print('Successfully converted json to csv.')
+        json_df.to_csv(('models/research/object_detection/images/' + folder + '_labels.csv'), index=None)
+    print('Successfully converted json to csv.')
 
 
 if __name__ == "__main__":
