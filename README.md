@@ -73,4 +73,4 @@ watch -n 0.5 nvidia-smi
 ---
 
 ## ToDo:
-1. Add scripts to README.md
+1. Try Running the training.
