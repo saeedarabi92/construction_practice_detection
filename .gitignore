@@ -131,4 +131,5 @@ images/*
 TAMA032819*
 models/research/object_detection/models/
 models/research/object_detection/images/train/
-models/research/object_detection/images/test/
+models/research/object_detection/images/eval/
+models/research/object_detection/data/*.record
