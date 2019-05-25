@@ -54,10 +54,14 @@ python models/research/object_detection/generate_tfrecord.py --csv_input=models/
 ### To run the training:
 * From _tensorflow/models/research/_
 
-python object_detection/model_main.py --pipeline_config_path=/home/saeed/Desktop/papers/manuscript1/models/research/object_detection/data/ssd_mobilenet_v1_conv.config --model_dir=/home/saeed/Desktop/papers/manuscript1/models/research/object_detection/models/model --num_train_steps=200000 --sample_1_of_n_eval_examples=1 --alsologtostderr
+python object_detection/model_main.py --pipeline_config_path=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/ssd_mobilenet_modified.config --model_dir=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints --num_train_steps=200000 --sample_1_of_n_eval_examples=1 --alsologtostderr
+
 
 ### To monitor the training using tensorboard:
-tensorboard --logdir=/home/saeed/Desktop/papers/manuscript1/models/research/object_detection/models/model
+
+* Run this in a separate terminal and click on the link which provides by tensorboard in the terminal:
+
+tensorboard --logdir=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints
 
 ### General notes:
 * cuda version:
