@@ -68,8 +68,6 @@ tensorboard --logdir=/home/saeed/Desktop/github/construction_practice_detection/
 
 * From _tensorflow/models/research/_
 
-# From tensorflow/models/research/
-
 python object_detection/export_inference_graph.py \
     --input_type=image_tensor \
     --pipeline_config_path=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/ssd_mobilenet_modified.config \
