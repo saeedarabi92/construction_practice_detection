@@ -1,3 +1,4 @@
+
 # Construction practices detection
 ### This projects contains all the information and codes about construction practices detection project.
 ---
@@ -71,8 +72,16 @@ tensorboard --logdir=/home/saeed/Desktop/github/construction_practice_detection/
 python object_detection/export_inference_graph.py \
     --input_type=image_tensor \
     --pipeline_config_path=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/ssd_mobilenet_modified.config \
-    --trained_checkpoint_prefix=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints \
-    --output_directory=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data
+    --trained_checkpoint_prefix=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints/model.ckpt-30493 \
+    --output_directory=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/frozen_graph
+
+### To run the inference:
+
+* From _tensorflow/models/research/_
+
+python object_detection/inference.py --input_dir /home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/inference/test --frozen_graph /home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/frozen_graph/frozen_inference_graph.pb --label_map /home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/practice_detection_label_map.pbtxt --output_dir /home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/inference/result --num_output_classes 1
+
+
 
 ### General notes:
 * cuda version:
