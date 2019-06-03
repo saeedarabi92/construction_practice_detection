@@ -5,7 +5,6 @@ import sys
 import tarfile
 import tensorflow as tf
 import zipfile
-import cv2
 import glob
 import argparse
 import pandas as pd
@@ -16,10 +15,14 @@ from PIL import Image
 from utils import label_map_util
 from utils import visualization_utils as vis_util
 import matplotlib.patches as patches
-
+import sys
 
 # if tf.__version__ != '1.4.0':
 #   raise ImportError('Please upgrade your tensorflow installation to v1.4.0!')
+
+# remove ROS PATH from PYTHONPATH:
+# sys.path.remove('/opt/ros/kinetic/lib/python2.7/dist-packages')
+import cv2
 
 
 parser = argparse.ArgumentParser()
@@ -68,7 +71,9 @@ with detection_graph.as_default():
 label_map = label_map_util.load_labelmap(PATH_TO_LABELS)
 categories = label_map_util.convert_label_map_to_categories(label_map, max_num_classes=NUM_CLASSES, use_display_name=True)
 category_index = label_map_util.create_category_index(categories)
-print([keys for keys in category_index])
+# print("")
+# print(category_index)
+# print("")
 with detection_graph.as_default():
     with tf.Session(graph=detection_graph) as sess:
         # Definite input and output Tensors for detection_graph
@@ -88,15 +93,19 @@ with detection_graph.as_default():
 
         for image_path, result_path in zip(TEST_IMAGE_PATHS, RESULT_IMAGE_PATHS):
             # print('RESULT_IMAGE_PATHS ', RESULT_IMAGE_PATHS)
-            # image_np = cv2.imread(image_path, 1)
+            image = cv2.imread(image_path, 1)
 
-            image = Image.open(image_path)
-            image_resized = np.array(image.resize((300, 300)))
-            image = np.array(image)
+            # image = Image.open(image_path)
+
+            image_resized = np.resize(image, (1, 300, 300, 3))
+            # image = np.array(image)
+            # print("")
+            # print(image_resized.shape)
+            # print("")
             # the array based representation of the image will be used later in
             # Actual detection.
             (boxes, scores, classes, num) = sess.run(
-            [detection_boxes, detection_scores, detection_classes, num_detections], feed_dict={image_tensor: image_resized[None, ...]})
+            [detection_boxes, detection_scores, detection_classes, num_detections], feed_dict={image_tensor: image_resized})
             # Visualization of the results of a detection.
 
 
@@ -125,7 +134,7 @@ with detection_graph.as_default():
             # file_path = file_dir +  r'{}.txt'.format(image_path.split('/')[-1].split('.')[0])
             # print('file_path: ', file_path)
                 detection_df.to_csv(result_path.split('.')[0]+'.txt', index= None, header= None, sep=' ')
-            # plt.show()
+            plt.show()
             plt.axis('off')
             plt.savefig(result_path)
 
