@@ -97,4 +97,5 @@ watch -n 0.5 nvidia-smi
 ---
 
 ## ToDo:
-1. Try Running the training.
+There is a problem with the Billur annotations. Xmax is not bigger than Xmin. Double check and create a new annotations. Check the Json to csv code first.
+
