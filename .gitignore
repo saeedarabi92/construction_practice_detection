@@ -134,3 +134,6 @@ models/research/object_detection/images/train/
 models/research/object_detection/images/eval/
 models/research/object_detection/data/*.record
 models/research/object_detection/data/checkpoints/
+models/research/object_detection/data/inference/
+models/research/object_detection/data/training_data/
+models/research/object_detection/data/weights/
