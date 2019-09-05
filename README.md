@@ -32,7 +32,7 @@ Creat _train_ and _eval_ folder under _models/research/object_detection/images/_
 
 python models/research/object_detection/json_to_csv.py
 
-### To copy the files from folder1 (and its sub-folders) with the same name of the files in the folder2, into folder2.:
+### To copy the files from folder1 (and its sub-folders) with the same name of the files in the folder2, into folder2.:(This is for copying annotations to _eval_ and _train_ folder)
 
 * From the root directory run:
 
@@ -69,17 +69,13 @@ tensorboard --logdir=/home/saeed/Desktop/github/construction_practice_detection/
 
 * From _tensorflow/models/research/_
 
-python object_detection/export_inference_graph.py \
-    --input_type=image_tensor \
-    --pipeline_config_path=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/ssd_mobilenet_modified.config \
-    --trained_checkpoint_prefix=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints/model.ckpt-30493 \
-    --output_directory=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/frozen_graph
+python object_detection/export_inference_graph.py --input_type=image_tensor --pipeline_config_path=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/configs/ --trained_checkpoint_prefix=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints/model.ckpt-9804 --output_directory=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/frozen_graph
 
 ### To run the inference:
 
 * From _tensorflow/models/research/_
 
-python object_detection/inference.py --input_dir /home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/inference/test --frozen_graph /home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/frozen_graph/frozen_inference_graph.pb --label_map /home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/practice_detection_label_map.pbtxt --output_dir /home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/inference/result --num_output_classes 1
+python object_detection/inference.py --input_dir /home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/inference/test --frozen_graph /home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/frozen_graph/frozen_inference_graph.pb --label_map /home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/label_maps/practice_detection_label_map.pbtxt --output_dir /home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/inference/result --num_output_classes 1
 
 
 
@@ -98,4 +94,3 @@ watch -n 0.5 nvidia-smi
 
 ## ToDo:
 There is a problem with the Billur annotations. Xmax is not bigger than Xmin. Double check and create a new annotations. Check the Json to csv code first.
-
