@@ -24,45 +24,27 @@ done
 ## Instruction for training with custom dataset
 [link to tutorial](https://github.com/EdjeElectronics/TensorFlow-Object-Detection-API-Tutorial-Train-Multiple-Objects-Windows-10)
 
-### To pars json files to a csv file:
+1. Create _train_ and _eval_ folder under _models/research/object_detection/images/_ and put the related annotations and images (eval and train) in their folder.
 
-Creat _train_ and _eval_ folder under _models/research/object_detection/images/_ and put their images in them.
+    * To copy the files from folder1 (and its sub-folders) with the same name of the files in the folder2, into folder2.: (This is for copying annotations to _eval_ and _train_ folder)
 
-* From the root directory run:
-
-python models/research/object_detection/json_to_csv.py
-
-### To copy the files from folder1 (and its sub-folders) with the same name of the files in the folder2, into folder2.:(This is for copying annotations to _eval_ and _train_ folder)
-
-* From the root directory run:
-
-python move_files.py --folder1 /models/research/object_detection/images/images_tiled_raw --folder2 /models/research/object_detection/images/test
+    For example, from the root directory run:`python move_files.py --folder1 /models/research/object_detection/images/{folder_name} --folder2 /models/research/object_detection/images/{folder_name}`
 
 
-
-### To create tf.record files:
-
-* From the root directory, run:
-
-_for training data_:
-
-python models/research/object_detection/generate_tfrecord.py --csv_input=models/research/object_detection/images/train_labels.csv --image_dir=models/research/object_detection/images/train --output_path=models/research/object_detection/data/train.record
-
-_for eval data_:
-
-python models/research/object_detection/generate_tfrecord.py --csv_input=models/research/object_detection/images/eval_labels.csv --image_dir=models/research/object_detection/images/eval --output_path=models/research/object_detection/data/eval.record
-
-### To run the training:
-* From _tensorflow/models/research/_
-
-python object_detection/model_main.py --pipeline_config_path=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/ssd_mobilenet_modified.config --model_dir=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints --num_train_steps=200000 --sample_1_of_n_eval_examples=1 --alsologtostderr
+2. From the root directory run: `python models/research/object_detection/json_to_csv.py`. (This will create .csv files which will later be used to create the _tfrecord_ files)
 
 
-### To monitor the training using tensorboard:
+3. Create tfrecord files: once the .csv files were created, _tfrecord_ files of training and evaluation will be created for training purposes.
 
-* Run this in a separate terminal and click on the link which provides by tensorboard in the terminal:
+    * To create _tf.record_ files, from the root directory, run: (`generate_tfrecord.py` should modified based on the custom dataset annotation) `python models/research/object_detection/generate_tfrecord.py --csv_input=models/research/object_detection/images/{train/eval}_labels.csv --image_dir=models/research/object_detection/images/{train/eval} --output_path=models/research/object_detection/data/{train/eval}.record`
 
-tensorboard --logdir=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints
+4. To run the training:
+
+    * From _tensorflow/models/research/_ run: `python object_detection/model_main.py --pipeline_config_path=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/configs/ssd_mobilenet_modified.config --model_dir=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints --num_train_steps=200000 --sample_1_of_n_eval_examples=1 --alsologtostderr`
+
+5. To monitor the training using tensorboard:
+
+    * Run this in a separate terminal and click on the link which provides by tensorboard in the terminal:`tensorboard --logdir=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints`
 
 
 ### To generate a frozen graph:
