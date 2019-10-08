@@ -47,11 +47,9 @@ done
     * Run this in a separate terminal and click on the link which provides by tensorboard in the terminal:`tensorboard --logdir=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints`
 
 
-### To generate a frozen graph:
+6. To generate a frozen graph:
 
-* From _tensorflow/models/research/_
-
-python object_detection/export_inference_graph.py --input_type=image_tensor --pipeline_config_path=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/configs/ --trained_checkpoint_prefix=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints/model.ckpt-9804 --output_directory=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/frozen_graph
+    * From _tensorflow/models/research/_ run: `python object_detection/export_inference_graph.py --input_type=image_tensor --pipeline_config_path=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/configs/{config file} --trained_checkpoint_prefix=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/checkpoints/model.ckpt-9804 --output_directory=/home/saeed/Desktop/github/construction_practice_detection/models/research/object_detection/data/frozen_graph`
 
 ### To run the inference:
 
